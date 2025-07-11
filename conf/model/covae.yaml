@@ -1,0 +1,38 @@
+name: 'covae'
+
+ema_rate: 0.9999
+learning_rate: 1e-4
+weight_decay: 0
+
+step_schedule: 'exp'
+sigma_min: 0.05
+sigma_max: 3
+rho: 7
+start_scales: 2
+end_scales: 256
+total_training_steps: 400000
+loss_mode: 'huber'
+denoiser_loss_mode: 'l2'
+use_gan: False
+gan_warmup_steps: 0
+gan_lambda: 1
+
+## discrete covae
+time_scale: 'karras'
+rec_weight_mode: 'linear'
+kl_weight_mode: 'square'
+lambda_denoiser: 1.
+
+## covae_simple
+kernel: 've'
+p_mean: -1.1
+p_std: 2.0
+sigma_data: 0.5
+norm_strength: 0.001
+mid_t: 0.821
+norm_weight: 'fixed'
+noise_schedule: 'lognormal'
+
+## covae_discrete_latent
+latent_type: 'gaussian'
+latent_shape: []

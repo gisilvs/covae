@@ -1,0 +1,10 @@
+name: 'autoencoder'
+model_channels: 64
+channel_mult_enc: [2, 2, 2]
+channel_mult_dec: [2, 2, 2]
+num_blocks_enc: 2
+num_blocks_dec: 2
+attn_resolutions: [16]
+dropout: 0.2
+z_channels: 4
+final_dim: None

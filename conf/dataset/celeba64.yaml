@@ -1,0 +1,14 @@
+name: 'celeba64'
+
+size: 64
+batch_size: 128
+num_workers: 8
+data_dir: '.'
+sample_shape: [256, 3, 64, 64]
+fid_sample_shape: [500, 3, 64, 64]
+n_dataset_samples: 50000
+input_shape: [3, 64, 64]
+plot_type: 'grid'
+img_resolution: 64
+in_channels: 3
+out_channels: 3

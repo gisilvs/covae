@@ -1,0 +1,5 @@
+description: 'CoVAE'
+cluster_name: 'covae-2-a100'#'nc4'
+display_name: 'covae-test'
+env_name: 'covae'
+hydra_command: ""
