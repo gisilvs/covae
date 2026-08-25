@@ -1,4 +1,4 @@
-name: 'covae'
+name: 'covae_simple'
 
 ema_rate: 0.9999
 learning_rate: 1e-4
@@ -17,14 +17,6 @@ use_gan: False
 gan_warmup_steps: 0
 gan_lambda: 1
 
-## discrete covae
-use_consistency_loss: True
-time_scale: 'karras'
-rec_weight_mode: 'linear'
-kl_weight_mode: 'square'
-lambda_denoiser: 1.
-
-## covae_simple
 kernel: 've'
 p_mean: -1.1
 p_std: 2.0
@@ -34,12 +26,8 @@ mid_t: 0.821
 norm_weight: 'fixed'
 noise_schedule: 'lognormal'
 
-## covae_discrete_latent
-latent_type: 'gaussian'
-latent_shape: []
-
 instance:
-  _target_: models.covae.CoVAE
+  _target_: models.covae_simple.CoVAESimple
   model:
     _target_: networks.autoencoder.AutoEncoder
     img_resolution: ${dataset.img_resolution}
@@ -79,10 +67,16 @@ instance:
     n_layers: 3
     use_actnorm: False
   gan_lambda: ${model.gan_lambda}
-  time_scale: ${model.time_scale}
-  rec_weight_mode: ${model.rec_weight_mode}
-  kl_weight_mode: ${model.kl_weight_mode}
-  lambda_denoiser: ${model.lambda_denoiser}
-  latent_type: ${model.latent_type}
-  latent_shape: ${model.latent_shape}
-  use_consistency_loss: ${model.use_consistency_loss}
+  kernel:
+    _target_: models.factories.build_kernel
+    name: ${model.kernel}
+    sigma_min: ${model.sigma_min}
+    sigma_max: ${model.sigma_max}
+    sigma_data: ${model.sigma_data}
+  p_mean: ${model.p_mean}
+  p_std: ${model.p_std}
+  sigma_data: ${model.sigma_data}
+  norm_strength: ${model.norm_strength}
+  mid_t: ${model.mid_t}
+  norm_weight: ${model.norm_weight}
+  noise_schedule: ${model.noise_schedule}
