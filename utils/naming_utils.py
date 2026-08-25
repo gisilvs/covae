@@ -12,6 +12,8 @@ def get_run_name(cfg: DictConfig):
         name += f'_ts_{cfg.model.time_scale}'
         name += f'_rwm_{cfg.model.rec_weight_mode}'
         name += f'_kwm_{cfg.model.kl_weight_mode}'
+        if not cfg.model.get('use_consistency_loss', True):
+            name += f'_no_consistency'
         name += f'_zch_{cfg.network.z_channels}'
         name += f'_bs_{cfg.dataset.batch_size * cfg.batch_multiplier}'
         name += f'_loss_mode_{cfg.model.loss_mode}'

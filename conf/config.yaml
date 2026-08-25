@@ -2,6 +2,7 @@ defaults:
  - dataset: mnist
  - model: covae
  - network: autoencoder
+ - _self_
 use_logger: True
 project: 'covae'
 fast_dev_run: False

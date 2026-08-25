@@ -15,6 +15,7 @@ class CoVAE(CoVAEBase):
                  lambda_denoiser,
                  latent_type,
                  latent_shape,
+                 use_consistency_loss=True,
                  **cm_kwargs
                  ):
         super().__init__(**cm_kwargs)
@@ -24,6 +25,7 @@ class CoVAE(CoVAEBase):
         self.lambda_denoiser = lambda_denoiser
         self.latent_type = latent_type
         self.latent_shape = latent_shape
+        self.use_consistency_loss = use_consistency_loss
         assert latent_type in ['gaussian', 'categorical']
         if latent_type == 'categorical':
             assert self.num_elements(self.latent_shape) == self.num_elements(self.noise_shape)
@@ -32,11 +34,11 @@ class CoVAE(CoVAEBase):
         return reduce(operator.mul, shape, 1)
 
     def _get_distribution(self, mu, std):
-        if self.latent_type == 'gaussian':
-            return torch.distributions.Normal(mu, std)
-        elif self.latent_type == 'categorical':
-            mu = mu.view([mu.shape[0]] + self.latent_shape[::-1]).transpose(1,2)
-            return torch.distributions.Categorical(logits=mu)
+        #if self.latent_type == 'gaussian':
+        return torch.distributions.Normal(mu, std)
+        #elif self.latent_type == 'categorical':
+        #    mu = mu.view([mu.shape[0]] + self.latent_shape[::-1]).transpose(1,2)
+        #    return torch.distributions.Categorical(logits=mu)
 
     def gumbel_softmax_sample(self, logits, noise, tau=1.0):
         gumbel_noise = -torch.log(-torch.log(noise + 1e-20) + 1e-20)
@@ -156,26 +158,30 @@ class CoVAE(CoVAEBase):
         time_steps = self._get_time_steps(num_timesteps, device=device)
         idxs = torch.randint(0, len(time_steps) - 1, (batch_size,))
         t = time_steps[idxs + 1].to(device)
-        r = time_steps[idxs].to(device)
         noise = self.sample_noise(batch_size, device)
+        use_consistency_loss = getattr(self, 'use_consistency_loss', True)
 
         with isolate_rng():
             x_t, mu, std, denoiser_x = self.precond(x, t, noise, labels)
 
-        if (idxs == 0).all():
-            # save time when training simple vae
-            x_r = x
-        else:
-            with torch.no_grad():
-                x_r, _, _, _ = self.precond(x, r, noise, labels)
+        if use_consistency_loss:
+            r = time_steps[idxs].to(device)
+            if (idxs == 0).all():
+                # save time when training simple vae
+                x_r = x
+            else:
+                with torch.no_grad():
+                    x_r, _, _, _ = self.precond(x, r, noise, labels)
 
-        if self.loss_mode == 'bce':
-            x_r = torch.where(self._append_dims(idxs > 0, dims).to(device), nn.functional.sigmoid(x_r), x)
+            if self.loss_mode == 'bce':
+                rec_target = torch.where(self._append_dims(idxs > 0, dims).to(device), nn.functional.sigmoid(x_r), x)
+            else:
+                # boundary condition
+                rec_target = torch.where(self._append_dims(idxs > 0, dims).to(device), x_r, x)
         else:
-            # boundary condition
-            x_r = torch.where(self._append_dims(idxs > 0, dims).to(device), x_r, x)
+            rec_target = x
 
-        rec_loss = self._loss_fn(x_t, x_r.detach(), self.loss_mode)
+        rec_loss = self._loss_fn(x_t, rec_target.detach(), self.loss_mode)
         log_dict['rec_loss'] = rec_loss.detach().view(batch_size, -1).sum(1).mean()
         rec_loss_weights = self._get_rec_loss_weights(t)
         kl_loss_weights = self._get_kl_loss_weights(t)

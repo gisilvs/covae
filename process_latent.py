@@ -14,7 +14,6 @@ from lightning_modules.lightning_cm import LightningConsistencyModel
 from utils.callback_utils import get_callbacks, get_delete_checkpoints_callback
 from utils.datamodule_utils import get_datamodule
 from utils.naming_utils import get_run_name
-from utils.model_utils import get_model
 from wandb_config import key
 from lightning.pytorch.utilities import rank_zero_only
 from pathlib import Path
