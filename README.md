@@ -1,7 +1,6 @@
 # Official Pytorch implementation for "CoVAE: Consistency Training of Variational Autoencoders" [https://arxiv.org/abs/2507.09103](https://arxiv.org/abs/2507.09103)
 
 ## Requirements
-This code uses Weights & Biases, and assumes that you have your wandb key in a file named `wandb_config.py` in a variable named `key=your_wandb_key`.
 This code uses the following libraries:
 ```angular2html
 pytorch 

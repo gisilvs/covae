@@ -14,7 +14,6 @@ from models.factories import validate_model_config
 from utils.callback_utils import get_callbacks, get_delete_checkpoints_callback
 from utils.datamodule_utils import get_datamodule
 from utils.naming_utils import get_run_name
-from wandb_config import key
 from lightning.pytorch.utilities import rank_zero_only
 from pathlib import Path
 
@@ -23,7 +22,6 @@ def main(cfg: DictConfig) -> None:
     if cfg.reload:
         reload = True
         #checkpoint_path = f'{cfg.root_dir}/model.ckpt'
-        wandb.login(key=key)
         run_path = Path(cfg.run_path)
         run_id = run_path.name
         resume = 'must'
@@ -78,7 +76,6 @@ def main(cfg: DictConfig) -> None:
     callbacks = get_callbacks(cfg)
 
     if cfg.use_logger:
-        wandb.login(key=key)
         # depending on the case, set log_model=True to log only at the end, log_model="all" to log during training (in case training might be interrupted)
         logger = WandbLogger(project=cfg.project, name=name, log_model=cfg.log_model, save_dir=cfg.root_dir, resume=resume, id=run_id)
 
