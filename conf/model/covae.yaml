@@ -18,7 +18,6 @@ gan_warmup_steps: 0
 gan_lambda: 1
 
 ## discrete covae
-use_consistency_loss: True
 time_scale: 'karras'
 rec_weight_mode: 'linear'
 kl_weight_mode: 'square'
@@ -37,52 +36,3 @@ noise_schedule: 'lognormal'
 ## covae_discrete_latent
 latent_type: 'gaussian'
 latent_shape: []
-
-instance:
-  _target_: models.covae.CoVAE
-  model:
-    _target_: networks.autoencoder.AutoEncoder
-    img_resolution: ${dataset.img_resolution}
-    in_channels: ${dataset.in_channels}
-    out_channels: ${dataset.out_channels}
-    label_dim: 0
-    model_channels: ${network.model_channels}
-    channel_mult_enc: ${network.channel_mult_enc}
-    num_blocks_enc: ${network.num_blocks_enc}
-    channel_mult_dec: ${network.channel_mult_dec}
-    num_blocks_dec: ${network.num_blocks_dec}
-    attn_resolutions: ${network.attn_resolutions}
-    dropout: ${network.dropout}
-    z_channels: ${network.z_channels}
-    final_dim: ${network.final_dim}
-  step_schedule: ${model.step_schedule}
-  sigma_min: ${model.sigma_min}
-  sigma_max: ${model.sigma_max}
-  rho: ${model.rho}
-  start_scales: ${model.start_scales}
-  end_scales: ${model.end_scales}
-  total_training_steps: ${model.total_training_steps}
-  noise_shape:
-    _target_: models.factories.build_noise_shape
-    img_resolution: ${dataset.img_resolution}
-    channel_mult_enc: ${network.channel_mult_enc}
-    z_channels: ${network.z_channels}
-    final_dim: ${network.final_dim}
-  loss_mode: ${model.loss_mode}
-  denoiser_loss_mode: ${model.denoiser_loss_mode}
-  use_gan: ${model.use_gan}
-  gan_warmup_steps: ${model.gan_warmup_steps}
-  discriminator:
-    _target_: models.factories.build_discriminator
-    enabled: ${model.use_gan}
-    input_nc: ${dataset.in_channels}
-    n_layers: 3
-    use_actnorm: False
-  gan_lambda: ${model.gan_lambda}
-  time_scale: ${model.time_scale}
-  rec_weight_mode: ${model.rec_weight_mode}
-  kl_weight_mode: ${model.kl_weight_mode}
-  lambda_denoiser: ${model.lambda_denoiser}
-  latent_type: ${model.latent_type}
-  latent_shape: ${model.latent_shape}
-  use_consistency_loss: ${model.use_consistency_loss}

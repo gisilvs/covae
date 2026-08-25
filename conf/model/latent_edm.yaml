@@ -7,14 +7,6 @@ total_training_steps: 400000
 
 t: 0.05
 sample_std: 0
-autoencoder_artifact_alias: 'best'
-checkpoint_filename: 'model.ckpt'
-diffusion_img_resolution: 8
-diffusion_in_channels: 16
-diffusion_out_channels: 16
-diffusion_attn_resolutions: [8]
-diffusion_channel_mult: [2, 2, 2]
-diffusion_dropout: 0.1
 
 
 step_schedule: 'exp'
@@ -48,23 +40,3 @@ noise_schedule: 'lognormal'
 ## covae_discrete_latent
 latent_type: 'gaussian'
 latent_shape: []
-
-instance:
-  _target_: models.latent_edm.LatentEDM
-  model:
-    _target_: models.factories.load_pretrained_autoencoder_from_wandb
-    run_path: ${run_path}
-    root_dir: ${root_dir}
-    alias: ${model.autoencoder_artifact_alias}
-    checkpoint_filename: ${model.checkpoint_filename}
-  diffusion_net:
-    _target_: networks.networks.SongUNet
-    img_resolution: ${model.diffusion_img_resolution}
-    in_channels: ${model.diffusion_in_channels}
-    out_channels: ${model.diffusion_out_channels}
-    attn_resolutions: ${model.diffusion_attn_resolutions}
-    label_dim: 0
-    channel_mult: ${model.diffusion_channel_mult}
-    dropout: ${model.diffusion_dropout}
-  sample_std: ${model.sample_std}
-  t: ${model.t}

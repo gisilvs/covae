@@ -2,18 +2,19 @@ import sys
 
 import hydra
 import lightning as L
+from fontTools.misc.plistlib import totree
 from lightning.pytorch.loggers import WandbLogger
-from omegaconf import DictConfig, ListConfig
+from omegaconf import DictConfig, OmegaConf, ListConfig
 import time
 
 import torch
 import wandb
 
 from lightning_modules.lightning_cm import LightningConsistencyModel
-from models.factories import validate_model_config
 from utils.callback_utils import get_callbacks, get_delete_checkpoints_callback
 from utils.datamodule_utils import get_datamodule
 from utils.naming_utils import get_run_name
+from utils.model_utils import get_model
 from wandb_config import key
 from lightning.pytorch.utilities import rank_zero_only
 from pathlib import Path
@@ -59,8 +60,7 @@ def main(cfg: DictConfig) -> None:
         reload = False
         resume = 'allow'
         run_id = None
-        validate_model_config(cfg)
-        model = hydra.utils.instantiate(cfg.model.instance, _convert_="all")
+        model = get_model(cfg)
         model = LightningConsistencyModel(cfg, model)
 
     if cfg.devices == 'auto':
