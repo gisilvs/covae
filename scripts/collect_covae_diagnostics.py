@@ -25,7 +25,13 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(
         description="Collect one-step post-training CoVAE diagnostics for one checkpoint."
     )
-    parser.add_argument("--checkpoint", type=Path, required=True, help="Path to model.ckpt.")
+    source_group = parser.add_mutually_exclusive_group(required=True)
+    source_group.add_argument("--checkpoint", type=Path, help="Path to a local model.ckpt.")
+    source_group.add_argument(
+        "--run-path",
+        type=str,
+        help="W&B run path, e.g. entity/project/run_id. Downloads entity/project/model-run_id:latest.",
+    )
     parser.add_argument("--output-dir", type=Path, required=True, help="Directory where diagnostics are saved.")
     parser.add_argument("--num-samples", type=int, default=10_000, help="Number of examples/samples to evaluate.")
     parser.add_argument("--batch-size", type=int, default=128, help="Evaluation batch size.")
@@ -79,6 +85,42 @@ def load_model(checkpoint: Path, device: torch.device):
     if device.type == "cuda":
         torch.cuda.empty_cache()
     return cfg, model
+
+
+def artifact_reference_from_run_path(run_path: str) -> str:
+    run_path = run_path.strip().rstrip("/")
+    parts = run_path.split("/")
+    if len(parts) < 3:
+        raise ValueError(f"Expected W&B run path like entity/project/run_id, got {run_path!r}.")
+    run_id = parts[-1]
+    artifact_prefix = "/".join(parts[:-1])
+    return f"{artifact_prefix}/model-{run_id}:latest"
+
+
+def find_downloaded_checkpoint(download_dir: Path) -> Path:
+    candidates = sorted(download_dir.rglob("model.ckpt"))
+    if not candidates:
+        candidates = sorted(download_dir.rglob("*.ckpt"))
+    if not candidates:
+        raise FileNotFoundError(f"No checkpoint file found under {download_dir}.")
+    if len(candidates) > 1:
+        print(f"Found multiple checkpoints; using {candidates[0]}")
+    return candidates[0]
+
+
+def resolve_checkpoint(args: argparse.Namespace) -> tuple[Path, str | None]:
+    if args.checkpoint is not None:
+        return args.checkpoint, None
+
+    artifact_ref = artifact_reference_from_run_path(args.run_path)
+    artifact_dir = args.output_dir / "checkpoint_artifact"
+    print(f"Downloading W&B artifact {artifact_ref} to {artifact_dir}")
+    import wandb
+
+    artifact = wandb.Api().artifact(artifact_ref, type="model")
+    download_path = Path(artifact.download(root=str(artifact_dir)))
+    checkpoint = find_downloaded_checkpoint(download_path)
+    return checkpoint, artifact_ref
 
 
 def build_eval_loader(
@@ -328,7 +370,8 @@ def main() -> None:
     device = select_device(args.device)
     args.output_dir.mkdir(parents=True, exist_ok=True)
 
-    cfg, model = load_model(args.checkpoint, device)
+    checkpoint_path, artifact_ref = resolve_checkpoint(args)
+    cfg, model = load_model(checkpoint_path, device)
     eval_loader = build_eval_loader(
         cfg=cfg,
         batch_size=args.batch_size,
@@ -339,7 +382,7 @@ def main() -> None:
     t_indices = positive_t_indices(model, args, device)
     time_steps = model._get_time_steps(model.end_scales + 1, device=device)
 
-    print(f"Loaded EMA model from {args.checkpoint}")
+    print(f"Loaded EMA model from {checkpoint_path}")
     print(f"Dataset: {cfg.dataset.name}; samples: {args.num_samples}; device: {device}")
     print(f"Evaluating time indices: {t_indices.tolist()}")
 
@@ -422,7 +465,9 @@ def main() -> None:
 
     payload = {
         "metadata": {
-            "checkpoint": str(args.checkpoint),
+            "checkpoint": str(checkpoint_path),
+            "run_path": args.run_path,
+            "artifact_reference": artifact_ref,
             "weights": "ema",
             "sampling_steps": 1,
             "generation_definition": "sample z from the prior and decode once at t",
